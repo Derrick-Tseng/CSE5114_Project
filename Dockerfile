@@ -1,6 +1,6 @@
 # Dockerfile
-# Use the official Airflow image matching docker-compose version
-FROM apache/airflow:2.9.3-python3.11
+# Use the official Airflow image with Python 3.8 to match Spark worker
+FROM apache/airflow:2.9.3-python3.8
 
 USER root
 
@@ -24,6 +24,6 @@ USER airflow
 RUN pip install --no-cache-dir \
     "apache-airflow-providers-apache-spark==4.10.0" \
     "apache-airflow-providers-http==4.12.0" \
-    "apache-airflow-providers-common-sql==1.20.0" \
-    "apache-airflow-providers-snowflake==5.8.1" \
+    "apache-airflow-providers-common-sql==1.17.1" \
+    "apache-airflow-providers-snowflake==5.7.1" \
     "pyspark==3.5.3"

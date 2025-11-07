@@ -10,6 +10,45 @@ services:
     volumes:
       - ./scripts:/opt/spark/scripts
       - ./data:/opt/spark/data
+      - ./spark-events:/opt/spark/spark-events
+      - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+    environment:
+      - SPARK_CONF_DIR=/opt/spark/conf
+
+  spark-worker-1:
+    container_name: spark-worker-1
+    image: apache/spark:3.5.3-python3
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_CONF_DIR=/opt/spark/conf
+      - PYSPARK_PYTHON=python3
+      - PYSPARK_DRIVER_PYTHON=python3
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./scripts:/opt/spark/scripts
+      - ./data:/opt/spark/data
+      - ./spark-events:/opt/spark/spark-events
+      - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+
+  spark-history:
+    container_name: spark-history
+    image: apache/spark:3.5.3-python3
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.history.HistoryServer
+    ports:
+      - "18080:18080"
+    volumes:
+      - ./spark-events:/opt/spark/spark-events
+      - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+    environment:
+      - SPARK_CONF_DIR=/opt/spark/conf
+      - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=file:///opt/spark/spark-events -Dspark.history.ui.port=18080
+    depends_on:
+      - spark-master
 
   postgres:
     container_name: airflow-postgres
@@ -55,12 +94,15 @@ services:
     volumes:
       - ./dags:/opt/airflow/dags
       - ./data:/opt/airflow/data
+      - ./data:/opt/spark/data
       - ./jobs:/opt/airflow/jobs
       - ./plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./logs:/opt/airflow/logs
+      - ./spark-events:/opt/spark/spark-events
+      - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
     ports:
-      - "8081:8080"
+      - "8000:8080"
     command: webserver
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
@@ -90,10 +132,13 @@ services:
     volumes:
       - ./dags:/opt/airflow/dags
       - ./data:/opt/airflow/data
+      - ./data:/opt/spark/data
       - ./jobs:/opt/airflow/jobs
       - ./plugins:/opt/airflow/plugins
       - ./scripts:/opt/airflow/scripts
       - ./logs:/opt/airflow/logs
+      - ./spark-events:/opt/spark/spark-events
+      - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
     ports:
       - "4041:4040"
     command: scheduler

@@ -210,3 +210,4 @@ __marimo__/
 key/
 data/
 logs/
+spark-events/
