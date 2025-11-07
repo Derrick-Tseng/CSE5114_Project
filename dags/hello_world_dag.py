@@ -58,9 +58,15 @@ with DAG(
         bash_command="""
         export PYSPARK_PYTHON=python3
         export PYSPARK_DRIVER_PYTHON=python3
+        
+        # Read environment variables (will be passed from docker-compose or .env)
+        SPARK_PACKAGES="${SPARK_PACKAGES:-net.snowflake:spark-snowflake_2.12:3.1.5}"
+        WRITE_SF="${WRITE_SNOWFLAKE:-false}"
+        
         spark-submit \
             --master spark://spark-master:7077 \
             --deploy-mode client \
+            --packages ${SPARK_PACKAGES} \
             --conf spark.pyspark.python=python3 \
             --conf spark.pyspark.driver.python=python3 \
             --conf spark.eventLog.enabled=true \
@@ -74,7 +80,9 @@ with DAG(
             --verbose \
             /opt/airflow/jobs/hello_world_spark.py \
             --output-path /opt/spark/data/hello_world_output \
-            --app-name HelloWorldSpark_{{ ds_nodash }}
+            --app-name HelloWorldSpark_{{ ds_nodash }} \
+            $(if [ "$WRITE_SF" = "true" ]; then echo "--write-snowflake"; fi) \
+            --snowflake-table HELLO_WORLD_DATA
         """,
     )
     
