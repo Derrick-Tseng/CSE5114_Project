@@ -101,6 +101,7 @@ services:
       - ./logs:/opt/airflow/logs
       - ./spark-events:/opt/spark/spark-events
       - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - ./valid_fips_codes.csv:/opt/airflow/valid_fips_codes.csv
     ports:
       - "8000:8080"
     command: webserver
@@ -139,6 +140,7 @@ services:
       - ./logs:/opt/airflow/logs
       - ./spark-events:/opt/spark/spark-events
       - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - ./valid_fips_codes.csv:/opt/airflow/valid_fips_codes.csv
     ports:
       - "4041:4040"
     command: scheduler
