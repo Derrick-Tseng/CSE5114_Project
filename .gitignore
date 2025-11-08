@@ -211,3 +211,4 @@ key/
 data/
 logs/
 spark-events/
+.DS_Store
