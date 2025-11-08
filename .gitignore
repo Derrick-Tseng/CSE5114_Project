@@ -208,7 +208,9 @@ __marimo__/
 
 # Others
 key/
-data/
+data/*
 logs/
 spark-events/
 .DS_Store
+!data/fips_mapping.csv
+!data/valid_fips_codes.csv
