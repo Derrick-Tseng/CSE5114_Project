@@ -50,7 +50,10 @@ def fetch_county_names_from_census():
 
 
 def update_fips_mapping_file(county_mapping, input_file, output_file):
-    """Update FIPS mapping CSV with real county names."""
+    """Update FIPS mapping CSV with real county names. Skip unmappable FIPS codes."""
+    skipped_count = 0
+    written_count = 0
+    
     with open(output_file, 'w', newline='', encoding='utf-8') as f_out:
         writer = csv.writer(f_out)
         writer.writerow(['fips_code', 'state_code', 'state_name', 'county_name', 'county_code'])
@@ -63,21 +66,24 @@ def update_fips_mapping_file(county_mapping, input_file, output_file):
                 state_code = fips_code[:2]
                 state_name = STATE_NAMES.get(state_code, f'State {state_code}')
                 
+                # Only write rows that have real county mappings
                 if county_mapping and fips_code in county_mapping:
                     county_name = county_mapping[fips_code]
+                    county_code = fips_code[2:]
+                    writer.writerow([fips_code, state_code, state_name, county_name, county_code])
+                    written_count += 1
                 else:
-                    county_name = f'County {fips_code[2:]}'
-
-                county_code = fips_code[2:]
-                
-                writer.writerow([fips_code, state_code, state_name, county_name, county_code])
+                    skipped_count += 1
+                    print(f"Skipping unmappable FIPS code: {fips_code}")
+    
+    print(f"\nTotal written: {written_count}, Total skipped: {skipped_count}")
+    return written_count, skipped_count
 
 
 def main():
     project_root = Path(__file__).parent.parent
-    input_file = project_root / 'valid_fips_codes.csv'
-    output_file = project_root / 'fips_mapping.csv'
-    data_output = project_root / 'data' / 'fips_mapping.csv'
+    input_file = project_root / 'data' / 'valid_fips_codes.csv'
+    output_file = project_root / 'data' / 'fips_mapping.csv'
     
     if not input_file.exists():
         print(f"Error: Input file not found: {input_file}")
@@ -89,10 +95,6 @@ def main():
     
     # Write FIPS mapping file
     update_fips_mapping_file(county_mapping, input_file, output_file)
-    
-    # Copy to data directory
-    data_output.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(output_file, data_output)
     
     print("FIPS mapping completed")
     return 0
