@@ -44,7 +44,7 @@ if __name__ == "__main__":
     fips_codes = fetch_and_parse_fips()
     
     if fips_codes:
-        output_file = "valid_fips_codes.csv"
+        output_file = "data/valid_fips_codes.csv"
         save_to_csv(fips_codes, output_file)
         print(f"{len(fips_codes)} county-level FIPS codes")
     else:
