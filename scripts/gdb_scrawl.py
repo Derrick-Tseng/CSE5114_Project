@@ -5,7 +5,6 @@ import os
 data_path = "/Users/derricktseng/Desktop/WashU/DE_Project/data/"
 fips_csv_path = "/Users/derricktseng/Desktop/WashU/DE_Project/valid_fips_codes.csv"
 
-# Read validated FIPS codes from CSV (only real counties/cities)
 city_code = []
 with open(fips_csv_path, 'r') as f:
     reader = csv.DictReader(f)
@@ -31,10 +30,9 @@ for i, code in enumerate(city_code, 1):
         successful += 1
         if i % 100 == 0:
             print(f"Progress: {i}/{len(city_code)} - Downloaded: {successful}, Failed: {failed}")
-    except requests.exceptions.HTTPError as e:
-        # Skip invalid FIPS codes (404 errors) and mark for removal
+    except requests.exceptions.HTTPError:
         failed += 1
-        invalid_codes.append(code.replace("gdpall", ""))  # Store just the FIPS code
+        invalid_codes.append(code.replace("gdpall", ""))
         if i % 100 == 0:
             print(f"Progress: {i}/{len(city_code)} - Downloaded: {successful}, Failed: {failed}")
     except Exception as e:
@@ -42,15 +40,13 @@ for i, code in enumerate(city_code, 1):
         failed += 1
         invalid_codes.append(code.replace("gdpall", ""))
 
-print(f"\nDownload complete!")
+print(f"\nDownload complete")
 print(f"Successfully downloaded: {successful}")
 print(f"Failed/Invalid FIPS codes: {failed}")
 
-# Remove invalid FIPS codes from CSV
 if invalid_codes:
-    print(f"\nRemoving {len(invalid_codes)} invalid FIPS codes from CSV...")
+    print(f"\nRemoving {len(invalid_codes)} invalid FIPS codes from CSV")
     
-    # Read all valid codes
     valid_codes = []
     with open(fips_csv_path, 'r') as f:
         reader = csv.DictReader(f)
@@ -58,11 +54,10 @@ if invalid_codes:
             if row['fips_code'] not in invalid_codes:
                 valid_codes.append(row['fips_code'])
     
-    # Write back only valid codes
     with open(fips_csv_path, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['fips_code'])
         for fips in valid_codes:
             writer.writerow([fips])
     
-    print(f"Updated fips_codes.csv with {len(valid_codes)} valid FIPS codes")
+    print(f"Updated CSV with {len(valid_codes)} valid FIPS codes")

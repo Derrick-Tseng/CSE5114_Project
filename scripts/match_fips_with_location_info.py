@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate and update FIPS mapping with real county names from US Census Bureau API.
+Generate FIPS mapping with county names from US Census Bureau API.
 """
 
 import csv
@@ -46,11 +46,11 @@ def fetch_county_names_from_census():
         return county_mapping
         
     except requests.exceptions.RequestException:
-        print("Could not fetch from Census API.")
+        print("Could not fetch from Census API")
 
 
 def update_fips_mapping_file(county_mapping, input_file, output_file):
-    """Update FIPS mapping CSV with real county names. Skip unmappable FIPS codes."""
+    """Update FIPS mapping CSV with county names."""
     skipped_count = 0
     written_count = 0
     
@@ -66,7 +66,6 @@ def update_fips_mapping_file(county_mapping, input_file, output_file):
                 state_code = fips_code[:2]
                 state_name = STATE_NAMES.get(state_code, f'State {state_code}')
                 
-                # Only write rows that have real county mappings
                 if county_mapping and fips_code in county_mapping:
                     county_name = county_mapping[fips_code]
                     county_code = fips_code[2:]
@@ -76,7 +75,7 @@ def update_fips_mapping_file(county_mapping, input_file, output_file):
                     skipped_count += 1
                     print(f"Skipping unmappable FIPS code: {fips_code}")
     
-    print(f"\nTotal written: {written_count}, Total skipped: {skipped_count}")
+    print(f"\nWritten: {written_count}, Skipped: {skipped_count}")
     return written_count, skipped_count
 
 
@@ -89,11 +88,9 @@ def main():
         print(f"Error: Input file not found: {input_file}")
         return 1
     
-    # Fetch real county names from Census API
     county_mapping = None
     county_mapping = fetch_county_names_from_census()
     
-    # Write FIPS mapping file
     update_fips_mapping_file(county_mapping, input_file, output_file)
     
     print("FIPS mapping completed")

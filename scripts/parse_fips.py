@@ -2,8 +2,8 @@ import re
 import csv
 import requests
 
-# Read the full FCC data and parse it
 def fetch_and_parse_fips():
+    """Fetch and parse FIPS codes from FCC website."""
     url = "https://transition.fcc.gov/oet/info/maps/census/fips/fips.txt"
     
     try:
@@ -11,7 +11,6 @@ def fetch_and_parse_fips():
         response.raise_for_status()
         text = response.text
         
-        # Parse the county-level FIPS codes
         pattern = r'^\s*(\d{5})\s+(.+)$'
         
         fips_codes = []
@@ -19,7 +18,6 @@ def fetch_and_parse_fips():
             match = re.match(pattern, line)
             if match:
                 code = match.group(1)
-                # Exclude state-level codes (ending in 000)
                 if not code.endswith('000'):
                     fips_codes.append(code)
         
@@ -40,7 +38,7 @@ def save_to_csv(fips_codes, output_file):
 
 
 if __name__ == "__main__":
-    print("Fetching FIPS codes from FCC website...")
+    print("Fetching FIPS codes from FCC website")
     fips_codes = fetch_and_parse_fips()
     
     if fips_codes:
@@ -48,4 +46,4 @@ if __name__ == "__main__":
         save_to_csv(fips_codes, output_file)
         print(f"{len(fips_codes)} county-level FIPS codes")
     else:
-        print("No FIPS codes found or error occurred.")
+        print("No FIPS codes found")
