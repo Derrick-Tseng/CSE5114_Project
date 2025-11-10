@@ -18,6 +18,11 @@ RUN apt-get update && \
 ENV SPARK_HOME=/opt/spark
 ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
 
+# Create directories with proper permissions for airflow user
+RUN mkdir -p /opt/airflow/data/processed /opt/airflow/data/gdp && \
+    chown -R airflow:root /opt/airflow/data && \
+    chmod -R 775 /opt/airflow/data
+
 USER airflow
 
 # Install Python packages
