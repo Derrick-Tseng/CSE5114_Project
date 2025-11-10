@@ -188,13 +188,6 @@ def main():
         if not sf_options.get("pem_private_key") and not sf_options.get("sfPassword"):
             raise ValueError("No authentication method configured")
         
-        # if sf_options.get("pem_private_key"):
-        #     print(f"Authentication: Key-pair")
-        # elif sf_options.get("sfPassword"):
-        #     print(f"Authentication: Password")
-        # else:
-        #     raise ValueError("No authentication method configured")
-        
         print(f"Database: {sf_options.get('sfDatabase')}.{sf_options.get('sfSchema')}")
         
         create_snowflake_tables(spark, sf_options)
