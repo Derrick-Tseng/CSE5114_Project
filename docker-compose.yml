@@ -14,6 +14,8 @@ services:
       - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
     environment:
       - SPARK_CONF_DIR=/opt/spark/conf
+    networks:
+      - spark-airflow
 
   spark-worker-1:
     container_name: spark-worker-1
@@ -34,6 +36,8 @@ services:
       - ./data:/opt/spark/data
       - ./spark-events:/opt/spark/spark-events
       - ./spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+    networks:
+      - spark-airflow
 
   spark-history:
     container_name: spark-history
@@ -49,6 +53,8 @@ services:
       - SPARK_HISTORY_OPTS=-Dspark.history.fs.logDirectory=file:///opt/spark/spark-events -Dspark.history.ui.port=18080
     depends_on:
       - spark-master
+    networks:
+      - spark-airflow
 
   postgres:
     container_name: airflow-postgres
@@ -64,6 +70,8 @@ services:
       interval: 5s
       retries: 5
     restart: always
+    networks:
+      - spark-airflow
 
   airflow-webserver:
     container_name: airflow-webserver
@@ -110,6 +118,8 @@ services:
       timeout: 10s
       retries: 5
     restart: always
+    networks:
+      - spark-airflow
 
   airflow-scheduler:
     container_name: airflow-scheduler
@@ -152,6 +162,12 @@ services:
       timeout: 10s
       retries: 5
     restart: always
+    networks:
+      - spark-airflow
 
 volumes:
   postgres-db-volume:
+
+networks:
+  spark-airflow:
+    driver: bridge
