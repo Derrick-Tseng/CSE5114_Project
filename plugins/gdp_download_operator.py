@@ -22,6 +22,8 @@ class GDPDownloadOperator(BaseOperator):
         fips_csv_path='/opt/airflow/data/valid_fips_codes.csv',
         timeout=15,
         update_invalid_codes=False,
+        s3_bucket=None,
+        s3_prefix='raw/gdp/',
         **kwargs
     ):
         super(GDPDownloadOperator, self).__init__(**kwargs)
@@ -29,6 +31,8 @@ class GDPDownloadOperator(BaseOperator):
         self.fips_csv_path = fips_csv_path
         self.timeout = timeout
         self.update_invalid_codes = update_invalid_codes
+        self.s3_bucket = s3_bucket
+        self.s3_prefix = s3_prefix
     
     def execute(self, context):
         self.log.info(f"Starting GDP data download to {self.data_path}")
@@ -49,6 +53,15 @@ class GDPDownloadOperator(BaseOperator):
         failed = 0
         invalid_codes = []
         
+        # Initialize S3 client once if bucket is provided
+        s3_client = None
+        if self.s3_bucket:
+            import boto3
+            try:
+                s3_client = boto3.client('s3')
+            except Exception as e:
+                self.log.error(f"Failed to initialize S3 client: {e}")
+
         for i, code in enumerate(city_code, 1):
             url = self._build_fred_url(code)
             dest_path = os.path.join(self.data_path, f"{code}.csv")
@@ -60,6 +73,14 @@ class GDPDownloadOperator(BaseOperator):
                         for chunk in r.iter_content(chunk_size=8192):
                             if chunk:
                                 f.write(chunk)
+                
+                if s3_client:
+                    try:
+                        key = f"{self.s3_prefix}{code}.csv"
+                        s3_client.upload_file(dest_path, self.s3_bucket, key)
+                    except Exception as e:
+                        self.log.error(f"Error uploading {code}.csv to S3: {e}")
+
                 successful += 1
                 
                 if i % 100 == 0:

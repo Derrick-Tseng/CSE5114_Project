@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import os
 from airflow import DAG
 from spark_submit_operator import SparkSubmitOperator
 from population_download_operator import PopulationDownloadOperator
@@ -30,6 +31,8 @@ download_population = PopulationDownloadOperator(
     url='https://www.statsamerica.org/downloads/Population-by-Age-and-Sex.zip',
     timeout=60,
     extract=True,
+    s3_bucket=os.getenv('S3_BUCKET_NAME'),
+    s3_key='raw/population/Population-by-Age-and-Sex.zip',
     dag=dag,
 )
 

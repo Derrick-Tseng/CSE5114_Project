@@ -32,4 +32,5 @@ RUN pip install --no-cache-dir \
     "apache-airflow-providers-common-sql==1.17.1" \
     "apache-airflow-providers-snowflake==5.7.1" \
     "pyspark==3.5.3" \
-    "snowflake-connector-python==3.12.2"
+    "snowflake-connector-python==3.12.2" \
+    "boto3"

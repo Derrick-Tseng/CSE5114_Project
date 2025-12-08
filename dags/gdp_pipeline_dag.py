@@ -48,6 +48,8 @@ download_gdp = GDPDownloadOperator(
     fips_csv_path='/opt/airflow/data/valid_fips_codes.csv',
     timeout=15,
     update_invalid_codes=True,
+    s3_bucket=os.getenv('S3_BUCKET_NAME'),
+    s3_prefix='raw/gdp/',
 )
 
 bulk_load_bronze = SparkSubmitOperator(

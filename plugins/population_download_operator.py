@@ -22,6 +22,8 @@ class PopulationDownloadOperator(BaseOperator):
         url='https://www.statsamerica.org/downloads/Population-by-Age-and-Sex.zip',
         timeout=60,
         extract=True,
+        s3_bucket=None,
+        s3_key=None,
         **kwargs
     ):
         super(PopulationDownloadOperator, self).__init__(**kwargs)
@@ -29,6 +31,8 @@ class PopulationDownloadOperator(BaseOperator):
         self.url = url
         self.timeout = timeout
         self.extract = extract
+        self.s3_bucket = s3_bucket
+        self.s3_key = s3_key
     
     def execute(self, context):
         self.log.info(f"Starting population data download to {self.data_path}")
@@ -59,6 +63,9 @@ class PopulationDownloadOperator(BaseOperator):
             
             file_size_mb = os.path.getsize(zip_path) / (1024 * 1024)
             self.log.info(f"Successfully downloaded {zip_filename} ({file_size_mb:.2f} MB)")
+            
+            if self.s3_bucket:
+                self._upload_to_s3(zip_path, zip_filename)
             
             if self.extract:
                 self.log.info(f"Extracting {zip_filename}")
@@ -92,3 +99,21 @@ class PopulationDownloadOperator(BaseOperator):
         except Exception as e:
             self.log.error(f"Unexpected error: {e}")
             raise
+    
+    def _upload_to_s3(self, file_path, filename):
+        import boto3
+        from botocore.exceptions import NoCredentialsError
+        
+        s3 = boto3.client('s3')
+        key = self.s3_key if self.s3_key else f"raw/population/{filename}"
+        
+        try:
+            self.log.info(f"Uploading {filename} to s3://{self.s3_bucket}/{key}")
+            s3.upload_file(file_path, self.s3_bucket, key)
+            self.log.info("Upload successful")
+        except FileNotFoundError:
+            self.log.error("The file was not found")
+        except NoCredentialsError:
+            self.log.error("Credentials not available")
+        except Exception as e:
+            self.log.error(f"Error uploading to S3: {e}")
