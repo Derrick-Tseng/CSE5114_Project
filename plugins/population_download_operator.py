@@ -1,5 +1,6 @@
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
+from airflow.exceptions import AirflowException
 import requests
 import os
 import zipfile
@@ -31,12 +32,15 @@ class PopulationDownloadOperator(BaseOperator):
         self.url = url
         self.timeout = timeout
         self.extract = extract
-        self.s3_bucket = s3_bucket
-        self.s3_key = s3_key
+        self.s3_bucket = s3_bucket or os.getenv('AWS_S3_BUCKET_NAME')
+        self.s3_key = s3_key or os.getenv('POPULATION_S3_KEY')
     
     def execute(self, context):
         self.log.info(f"Starting population data download to {self.data_path}")
         
+        if not self.s3_bucket:
+            raise AirflowException("S3 bucket not configured. Set AWS_S3_BUCKET_NAME or pass s3_bucket explicitly.")
+
         os.makedirs(self.data_path, exist_ok=True)
         
         zip_filename = os.path.basename(self.url)
@@ -64,8 +68,7 @@ class PopulationDownloadOperator(BaseOperator):
             file_size_mb = os.path.getsize(zip_path) / (1024 * 1024)
             self.log.info(f"Successfully downloaded {zip_filename} ({file_size_mb:.2f} MB)")
             
-            if self.s3_bucket:
-                self._upload_to_s3(zip_path, zip_filename)
+            self._upload_to_s3(zip_path, zip_filename)
             
             if self.extract:
                 self.log.info(f"Extracting {zip_filename}")
@@ -102,7 +105,7 @@ class PopulationDownloadOperator(BaseOperator):
     
     def _upload_to_s3(self, file_path, filename):
         import boto3
-        from botocore.exceptions import NoCredentialsError
+        from botocore.exceptions import NoCredentialsError, BotoCoreError
         
         s3 = boto3.client('s3')
         key = self.s3_key if self.s3_key else f"raw/population/{filename}"
@@ -111,9 +114,9 @@ class PopulationDownloadOperator(BaseOperator):
             self.log.info(f"Uploading {filename} to s3://{self.s3_bucket}/{key}")
             s3.upload_file(file_path, self.s3_bucket, key)
             self.log.info("Upload successful")
-        except FileNotFoundError:
-            self.log.error("The file was not found")
-        except NoCredentialsError:
-            self.log.error("Credentials not available")
-        except Exception as e:
-            self.log.error(f"Error uploading to S3: {e}")
+        except FileNotFoundError as exc:
+            raise AirflowException("Population ZIP file not found for S3 upload") from exc
+        except (NoCredentialsError, BotoCoreError) as exc:
+            raise AirflowException(f"Credentials error uploading to S3: {exc}") from exc
+        except Exception as exc:
+            raise AirflowException(f"Error uploading to S3: {exc}") from exc

@@ -1,5 +1,6 @@
 from airflow.models import BaseOperator
 from airflow.utils.decorators import apply_defaults
+from airflow.exceptions import AirflowException
 import requests
 import csv
 import os
@@ -31,11 +32,15 @@ class GDPDownloadOperator(BaseOperator):
         self.fips_csv_path = fips_csv_path
         self.timeout = timeout
         self.update_invalid_codes = update_invalid_codes
-        self.s3_bucket = s3_bucket
-        self.s3_prefix = s3_prefix
+        self.s3_bucket = s3_bucket or os.getenv('AWS_S3_BUCKET_NAME')
+        prefix = os.getenv('GDP_S3_PREFIX', s3_prefix)
+        self.s3_prefix = (prefix.rstrip('/') + '/') if prefix else ''
     
     def execute(self, context):
         self.log.info(f"Starting GDP data download to {self.data_path}")
+
+        if not self.s3_bucket:
+            raise AirflowException("S3 bucket not configured. Set AWS_S3_BUCKET_NAME or pass s3_bucket explicitly.")
         
         os.makedirs(self.data_path, exist_ok=True)
         
@@ -55,12 +60,11 @@ class GDPDownloadOperator(BaseOperator):
         
         # Initialize S3 client once if bucket is provided
         s3_client = None
-        if self.s3_bucket:
+        try:
             import boto3
-            try:
-                s3_client = boto3.client('s3')
-            except Exception as e:
-                self.log.error(f"Failed to initialize S3 client: {e}")
+            s3_client = boto3.client('s3')
+        except Exception as e:
+            raise AirflowException(f"Failed to initialize S3 client: {e}") from e
 
         for i, code in enumerate(city_code, 1):
             url = self._build_fred_url(code)
@@ -74,12 +78,11 @@ class GDPDownloadOperator(BaseOperator):
                             if chunk:
                                 f.write(chunk)
                 
-                if s3_client:
-                    try:
-                        key = f"{self.s3_prefix}{code}.csv"
-                        s3_client.upload_file(dest_path, self.s3_bucket, key)
-                    except Exception as e:
-                        self.log.error(f"Error uploading {code}.csv to S3: {e}")
+                try:
+                    key = f"{self.s3_prefix}{code}.csv"
+                    s3_client.upload_file(dest_path, self.s3_bucket, key)
+                except Exception as e:
+                    raise AirflowException(f"Error uploading {code}.csv to S3: {e}") from e
 
                 successful += 1
                 
